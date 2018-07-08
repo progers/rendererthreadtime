@@ -13,6 +13,25 @@
 import argparse
 import json
 
+# Returns a map of (PID,TID) to a list of trace events.
+def groupedEvents(trace_json, pidtids):
+    events = {}
+    for event in trace_json["traceEvents"]:
+        if not event["ph"] == "X":
+            continue
+        pidtid = (event["pid"], event["tid"])
+        if not pidtid in pidtids:
+            continue
+
+        name = event["name"]
+        begin = event["ts"]
+        end = begin + event["dur"]
+
+        if not pidtid in events:
+            events[pidtid] = []
+        events[pidtid].append({"name": name, "begin": begin, "end": end})
+    return events
+
 # Returns a list of renderer process (PID) and thread (TID) ids.
 def rendererIDs(trace_json):
     pids = []
@@ -34,7 +53,8 @@ def rendererIDs(trace_json):
             continue
         if not event["pid"] in pids:
             continue
-        ids.append({"pid": event["pid"], "tid": event["tid"]})
+        pidtid = (event["pid"], event["tid"])
+        ids.append(pidtid)
     return ids
 
 def analyze(trace_file):
