@@ -13,7 +13,8 @@
 import argparse
 import json
 
-def rendererPIDs(trace_json):
+# Returns a list of renderer process (PID) and thread (TID) ids.
+def rendererIDs(trace_json):
     pids = []
     for event in trace_json["traceEvents"]:
         if not event["cat"] == "__metadata":
@@ -23,12 +24,23 @@ def rendererPIDs(trace_json):
         if not event["args"]["name"] == "Renderer":
             continue
         pids.append(event["pid"])
-    return pids
+    ids = []
+    for event in trace_json["traceEvents"]:
+        if not event["cat"] == "__metadata":
+            continue
+        if not event["name"] == "thread_name":
+            continue
+        if not event["args"]["name"] == "CrRendererMain":
+            continue
+        if not event["pid"] in pids:
+            continue
+        ids.append({"pid": event["pid"], "tid": event["tid"]})
+    return ids
 
 def analyze(trace_file):
     with open(trace_file) as f:
         trace_json = json.load(f)
-    print "Renderers: " + str(rendererPIDs(trace_json))
+    print "Renderers: " + str(rendererIDs(trace_json))
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze main thread time")
