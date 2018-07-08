@@ -25,8 +25,44 @@ class TestAnalyze(unittest.TestCase):
             ] }""")
         events = analyze.groupedEvents(trace, [(123, 111)])
         self.assertEquals(2, len(events[(123, 111)]))
-        self.assertEquals({'begin': 123, 'end': 124, 'name': u'event1'}, events[(123, 111)][0])
-        self.assertEquals({'begin': 124, 'end': 125, 'name': u'event2'}, events[(123, 111)][1])
+        self.assertEquals({'begin': 123, 'end': 124, 'name': 'event1'}, events[(123, 111)][0])
+        self.assertEquals({'begin': 124, 'end': 125, 'name': 'event2'}, events[(123, 111)][1])
+
+    def testSelfTimeSimpleNest(self):
+        # Pattern being tested:
+        #   [  a      ]
+        #       [ b   ]
+        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 2, 'end': 4, 'name': 'b'} ]
+        analyze.addSelfTime(events)
+        self.assertEquals(1, events[0]["self"])
+        self.assertEquals(2, events[1]["self"])
+
+    def testSelfTimeMultipleTopLevels(self):
+        # Pattern being tested:
+        #   [  a  ] [  b  ]
+        events = [ {'begin': 1, 'end': 2, 'name': 'a'}, {'begin': 2, 'end': 3, 'name': 'b'} ]
+        analyze.addSelfTime(events)
+        self.assertEquals(1, events[0]["self"])
+        self.assertEquals(1, events[1]["self"])
+
+    def testSelfTimeMultipleNested(self):
+        # Pattern being tested:
+        #   [   a   ]
+        #    [b] [c]
+        events = [ {'begin': 1, 'end': 6, 'name': 'a'}, {'begin': 2, 'end': 3, 'name': 'b'}, {'begin': 4, 'end': 5, 'name': 'c'} ]
+        analyze.addSelfTime(events)
+        self.assertEquals(3, events[0]["self"])
+        self.assertEquals(1, events[1]["self"])
+        self.assertEquals(1, events[2]["self"])
+
+    def testSelfTimeWithCompletelyOverlappingEvents(self):
+        # Pattern being tested:
+        #   [  a  ]
+        #   [  b  ]
+        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 1, 'end': 4, 'name': 'b'} ]
+        analyze.addSelfTime(events)
+        self.assertEquals(0, events[0]["self"])
+        self.assertEquals(3, events[1]["self"])
 
 if __name__ == "__main__":
     unittest.main()

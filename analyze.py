@@ -13,10 +13,23 @@
 import argparse
 import json
 
+# Compute each event self time.
+# TODO(pdr): Expand this comment.
+def addSelfTime(events):
+    # This is a naive O(n^2) approach.
+    for event in events:
+        selfTime = event["end"] - event["begin"]
+        for other in events:
+            if event == other:
+                continue
+            if other["begin"] >= event["begin"] and other["end"] <= event["end"]:
+                selfTime -= (other["end"] - other["begin"])
+        event["self"] = selfTime
+
 # Returns a map of (PID,TID) to a list of trace events.
-def groupedEvents(trace_json, pidtids):
+def groupedEvents(traceJson, pidtids):
     events = {}
-    for event in trace_json["traceEvents"]:
+    for event in traceJson["traceEvents"]:
         if not event["ph"] == "X":
             continue
         pidtid = (event["pid"], event["tid"])
@@ -25,6 +38,9 @@ def groupedEvents(trace_json, pidtids):
 
         name = event["name"]
         begin = event["ts"]
+        if not "dur" in event:
+            # TODO(pdr): Figure out why this happens.
+            continue
         end = begin + event["dur"]
 
         if not pidtid in events:
@@ -33,9 +49,9 @@ def groupedEvents(trace_json, pidtids):
     return events
 
 # Returns a list of renderer process (PID) and thread (TID) ids.
-def rendererIDs(trace_json):
+def rendererIDs(traceJson):
     pids = []
-    for event in trace_json["traceEvents"]:
+    for event in traceJson["traceEvents"]:
         if not event["cat"] == "__metadata":
             continue
         if not event["name"] == "process_name":
@@ -44,7 +60,7 @@ def rendererIDs(trace_json):
             continue
         pids.append(event["pid"])
     ids = []
-    for event in trace_json["traceEvents"]:
+    for event in traceJson["traceEvents"]:
         if not event["cat"] == "__metadata":
             continue
         if not event["name"] == "thread_name":
@@ -57,10 +73,18 @@ def rendererIDs(trace_json):
         ids.append(pidtid)
     return ids
 
-def analyze(trace_file):
-    with open(trace_file) as f:
-        trace_json = json.load(f)
-    print "Renderers: " + str(rendererIDs(trace_json))
+def analyze(traceFile):
+    with open(traceFile) as f:
+        traceJson = json.load(f)
+    ids = rendererIDs(traceJson)
+    allEvents = groupedEvents(traceJson, ids)
+
+    # TODO(pdr): Analyze the events and show the most expensive self-time categories.
+    for pidtid in ids:
+        events = allEvents[pidtid]
+        addSelfTime(events)
+        print "id: " + str(pidtid)
+        print "event count: " + str(len(events))
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze main thread time")
