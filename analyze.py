@@ -26,9 +26,9 @@ def addSelfTime(events):
                 selfTime -= (other["end"] - other["begin"])
         event["self"] = selfTime
 
-# Returns a map of (PID,TID) to a list of trace events.
-def groupedEvents(traceJson, pidtids):
-    events = {}
+# Returns events that match the provided PID&TID tuples.
+def eventsByID(traceJson, pidtids):
+    events = []
     for event in traceJson["traceEvents"]:
         if not event["ph"] == "X":
             continue
@@ -43,9 +43,7 @@ def groupedEvents(traceJson, pidtids):
             continue
         end = begin + event["dur"]
 
-        if not pidtid in events:
-            events[pidtid] = []
-        events[pidtid].append({"name": name, "begin": begin, "end": end})
+        events.append({"name": name, "begin": begin, "end": end})
     return events
 
 # Returns a list of renderer process (PID) and thread (TID) ids.
@@ -76,15 +74,11 @@ def rendererIDs(traceJson):
 def analyze(traceFile):
     with open(traceFile) as f:
         traceJson = json.load(f)
-    ids = rendererIDs(traceJson)
-    allEvents = groupedEvents(traceJson, ids)
+    events = eventsByID(traceJson, rendererIDs(traceJson))
 
     # TODO(pdr): Analyze the events and show the most expensive self-time categories.
-    for pidtid in ids:
-        events = allEvents[pidtid]
-        addSelfTime(events)
-        print "id: " + str(pidtid)
-        print "event count: " + str(len(events))
+    addSelfTime(events)
+    print "event count: " + str(len(events))
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze main thread time")
