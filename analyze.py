@@ -26,55 +26,56 @@ def addSelfTime(events):
                 selfTime -= (other["end"] - other["begin"])
         event["self"] = selfTime
 
-# Returns events that match the provided PID&TID tuples.
-def eventsByID(traceJson, pidtids):
-    events = []
-    for event in traceJson["traceEvents"]:
-        if not event["ph"] == "X":
-            continue
-        pidtid = (event["pid"], event["tid"])
-        if not pidtid in pidtids:
-            continue
-
-        name = event["name"]
-        begin = event["ts"]
-        if not "dur" in event:
-            # TODO(pdr): Figure out why this happens.
-            continue
-        end = begin + event["dur"]
-
-        events.append({"name": name, "begin": begin, "end": end})
-    return events
-
-# Returns a list of renderer process (PID) and thread (TID) ids.
-def rendererIDs(traceJson):
+# Returns the list of renderer (PID, TID) tuples.
+def _rendererIds(traceEvents):
     pids = []
-    for event in traceJson["traceEvents"]:
-        if not event["cat"] == "__metadata":
+    for event in traceEvents:
+        if event.get("cat") != "__metadata":
             continue
-        if not event["name"] == "process_name":
+        if event.get("name") != "process_name":
             continue
-        if not event["args"]["name"] == "Renderer":
+        if event.get("args").get("name") != "Renderer":
             continue
         pids.append(event["pid"])
     ids = []
-    for event in traceJson["traceEvents"]:
-        if not event["cat"] == "__metadata":
+    for event in traceEvents:
+        if event.get("cat") != "__metadata":
             continue
-        if not event["name"] == "thread_name":
+        if event.get("name") != "thread_name":
             continue
-        if not event["args"]["name"] == "CrRendererMain":
+        if event.get("args").get("name") != "CrRendererMain":
             continue
-        if not event["pid"] in pids:
+        if not event.get("pid") in pids:
             continue
         pidtid = (event["pid"], event["tid"])
         ids.append(pidtid)
     return ids
 
+# Returns events from renderer threads.
+def rendererEvents(traceEvents):
+    rendererIds = _rendererIds(traceEvents)
+    events = []
+    for traceEvent in traceEvents:
+        if traceEvent.get("ph") != "X":
+            continue
+        id = (traceEvent["pid"], traceEvent["tid"])
+        if not id in rendererIds:
+            continue
+
+        name = traceEvent["name"]
+        begin = traceEvent["ts"]
+        if not "dur" in traceEvent:
+            # TODO(pdr): Figure out why this happens.
+            continue
+        end = begin + traceEvent["dur"]
+
+        events.append({"name": name, "begin": begin, "end": end})
+    return events
+
 def analyze(traceFile):
     with open(traceFile) as f:
         traceJson = json.load(f)
-    events = eventsByID(traceJson, rendererIDs(traceJson))
+    events = rendererEvents(traceJson["traceEvents"])
 
     # TODO(pdr): Analyze the events and show the most expensive self-time categories.
     addSelfTime(events)
