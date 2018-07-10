@@ -169,10 +169,12 @@ def category(eventName):
     if (eventName == "v8.run"): return "v8"
     return "unknown"
 
-def analyze(traceFile):
-    with open(traceFile) as f:
-        traceJson = json.load(f)
-    events = rendererEvents(traceJson["traceEvents"])
+def analyze(traceFiles):
+    events = []
+    for traceFile in traceFiles:
+        with open(traceFile) as f:
+            traceJson = json.load(f)
+        events.extend(rendererEvents(traceJson["traceEvents"]))
 
     categorySelfTimes = {}
     nameSelfTimes = {}
@@ -191,18 +193,18 @@ def analyze(traceFile):
     print "self time by name:"
     sortedNameSelfTimes = sorted(nameSelfTimes.items(), key=operator.itemgetter(1))
     for name, time in sortedNameSelfTimes:
-        print name + ", time: " + str(time) + " category: " + category(name) + " (" + str(100 * time / totalSelfTime) + "%)"
+        print "  " + name + ", time: " + str(time) + " category: " + category(name) + " (" + str(100 * time / totalSelfTime) + "%)"
 
     print "self time by category:"
     sortedCategorySelfTimes = sorted(categorySelfTimes.items(), key=operator.itemgetter(1))
     for cat, time in sortedCategorySelfTimes:
-        print cat + ", time: " + str(time) + " (" + str(100 * time / totalSelfTime) + "%)"
+        print "  " + cat + ", time: " + str(time) + " (" + str(100 * time / totalSelfTime) + "%)"
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze main thread time")
-    parser.add_argument("trace", help="Trace to analyze, in json format")
+    parser.add_argument("traces", nargs="*", help="Traces to analyze, in json format")
     args, leftover = parser.parse_known_args()
-    analyze(args.trace)
+    analyze(args.traces)
 
 if __name__ == "__main__":
     main()
