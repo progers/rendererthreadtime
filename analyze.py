@@ -13,8 +13,9 @@
 import argparse
 import json
 
-# Compute each event's self time.
-def addSelfTime(events):
+# Compute each event's self time which is the time spent in the event minus the
+# time spent in all other events occurring at the same time.
+def _computeSelfTimes(events):
     def selfTime(event, events):
         if "self" in event:
             return event["self"]
@@ -63,7 +64,8 @@ def _rendererIds(traceEvents):
         ids.append(pidtid)
     return ids
 
-# Returns events from renderer threads.
+# Returns events from renderer threads. Each event has a name, begin, end, and
+# self time.
 def rendererEvents(traceEvents):
     rendererIds = _rendererIds(traceEvents)
     events = []
@@ -82,6 +84,8 @@ def rendererEvents(traceEvents):
         end = begin + traceEvent["dur"]
 
         events.append({"name": name, "begin": begin, "end": end})
+
+    _computeSelfTimes(events)
     return events
 
 def analyze(traceFile):
@@ -90,7 +94,6 @@ def analyze(traceFile):
     events = rendererEvents(traceJson["traceEvents"])
 
     # TODO(pdr): Analyze the events and show the most expensive self-time categories.
-    addSelfTime(events)
     print "event count: " + str(len(events))
 
 def main():

@@ -23,23 +23,23 @@ class TestAnalyze(unittest.TestCase):
                 { "pid": 111, "tid": 222, "ph": "X", "name": "event2", "ts": 124, "dur": 1} ]
         events = analyze.rendererEvents(traceEvents)
         self.assertEquals(2, len(events))
-        self.assertEquals({'begin': 123, 'end': 124, 'name': 'event1'}, events[0])
-        self.assertEquals({'begin': 124, 'end': 125, 'name': 'event2'}, events[1])
+        self.assertEquals({"begin": 123, "end": 124, "name": "event1", "self": 1}, events[0])
+        self.assertEquals({"begin": 124, "end": 125, "name": "event2", "self": 1}, events[1])
 
     def testSelfTimeSimpleNest(self):
         # Pattern being tested:
         #   [  a      ]
         #       [ b   ]
-        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 2, 'end': 4, 'name': 'b'} ]
-        analyze.addSelfTime(events)
+        events = [ {"begin": 1, "end": 4, "name": "a"}, {"begin": 2, "end": 4, "name": "b"} ]
+        analyze._computeSelfTimes(events)
         self.assertEquals(1, events[0]["self"])
         self.assertEquals(2, events[1]["self"])
 
     def testSelfTimeMultipleTopLevels(self):
         # Pattern being tested:
         #   [  a  ] [  b  ]
-        events = [ {'begin': 1, 'end': 2, 'name': 'a'}, {'begin': 2, 'end': 3, 'name': 'b'} ]
-        analyze.addSelfTime(events)
+        events = [ {"begin": 1, "end": 2, "name": "a"}, {"begin": 2, "end": 3, "name": "b"} ]
+        analyze._computeSelfTimes(events)
         self.assertEquals(1, events[0]["self"])
         self.assertEquals(1, events[1]["self"])
 
@@ -47,8 +47,8 @@ class TestAnalyze(unittest.TestCase):
         # Pattern being tested:
         #   [   a   ]
         #    [b] [c]
-        events = [ {'begin': 1, 'end': 6, 'name': 'a'}, {'begin': 2, 'end': 3, 'name': 'b'}, {'begin': 4, 'end': 5, 'name': 'c'} ]
-        analyze.addSelfTime(events)
+        events = [ {"begin": 1, "end": 6, "name": "a"}, {"begin": 2, "end": 3, "name": "b"}, {"begin": 4, "end": 5, "name": "c"} ]
+        analyze._computeSelfTimes(events)
         self.assertEquals(3, events[0]["self"])
         self.assertEquals(1, events[1]["self"])
         self.assertEquals(1, events[2]["self"])
@@ -58,8 +58,8 @@ class TestAnalyze(unittest.TestCase):
         #   [  a  ]
         #   [  b  ]
         #   [  c  ]
-        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 1, 'end': 4, 'name': 'b'}, {'begin': 1, 'end': 4, 'name': 'c'} ]
-        analyze.addSelfTime(events)
+        events = [ {"begin": 1, "end": 4, "name": "a"}, {"begin": 1, "end": 4, "name": "b"}, {"begin": 1, "end": 4, "name": "c"} ]
+        analyze._computeSelfTimes(events)
         self.assertEquals(0, events[0]["self"])
         self.assertEquals(0, events[1]["self"])
         self.assertEquals(3, events[2]["self"])
@@ -69,8 +69,8 @@ class TestAnalyze(unittest.TestCase):
         #   [ a ]
         #    [ b]
         #     [c]
-        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 2, 'end': 4, 'name': 'b'}, {'begin': 3, 'end': 4, 'name': 'c'} ]
-        analyze.addSelfTime(events)
+        events = [ {"begin": 1, "end": 4, "name": "a"}, {"begin": 2, "end": 4, "name": "b"}, {"begin": 3, "end": 4, "name": "c"} ]
+        analyze._computeSelfTimes(events)
         self.assertEquals(1, events[0]["self"])
         self.assertEquals(1, events[1]["self"])
         self.assertEquals(1, events[2]["self"])
