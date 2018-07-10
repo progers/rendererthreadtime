@@ -26,6 +26,21 @@ class TestAnalyze(unittest.TestCase):
         self.assertEquals({"begin": 123, "end": 124, "name": "event1", "self": 1}, events[0])
         self.assertEquals({"begin": 124, "end": 125, "name": "event2", "self": 1}, events[1])
 
+    def testSelfTimeForConcurrentEventsInDifferentThreads(self):
+        traceEvents = [
+                { "pid": 111, "cat": "__metadata", "name": "process_name", "args": { "name": "Renderer" } },
+                { "pid": 111, "tid": 222, "cat": "__metadata", "name": "thread_name", "args": { "name": "CrRendererMain" } },
+                { "pid": 555, "cat": "__metadata", "name": "process_name", "args": { "name": "Renderer" } },
+                { "pid": 555, "tid": 666, "cat": "__metadata", "name": "thread_name", "args": { "name": "CrRendererMain" } },
+                { "pid": 111, "tid": 222, "ph": "X", "name": "a", "ts": 1, "dur": 5},
+                { "pid": 555, "tid": 666, "ph": "X", "name": "b", "ts": 2, "dur": 2} ]
+        events = analyze.rendererEvents(traceEvents)
+        self.assertEquals(2, len(events))
+        self.assertEquals("a", events[0]["name"])
+        self.assertEquals(5, events[0]["self"])
+        self.assertEquals("b", events[1]["name"])
+        self.assertEquals(2, events[1]["self"])
+
     def testSelfTimeSimpleNest(self):
         # Pattern being tested:
         #   [  a      ]
