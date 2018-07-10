@@ -90,5 +90,37 @@ class TestAnalyze(unittest.TestCase):
         self.assertEquals(1, events[1]["self"])
         self.assertEquals(1, events[2]["self"])
 
+    # Integration test that checks that the sum of the time spent in top-level
+    # events equals the sum of all self-time.
+    def testSelfTimeSumsToTotalTopLevelTime(self):
+        testTraceFile = "test/data/pr.gg_load.json"
+        with open(testTraceFile) as f:
+            traceJson = json.load(f)
+        rendererIds = analyze._rendererIds(traceJson["traceEvents"])
+        eventsById = analyze._eventsById(traceJson["traceEvents"], rendererIds)
+
+        for id in eventsById:
+            topLevelEventTime = 0
+            totalSelfTime = 0
+            events = eventsById[id]
+            for event in events:
+                totalSelfTime += event["self"]
+                hasContainingEvent = False
+                for other in events:
+                    if other["begin"] > event["begin"] or other["end"] < event["end"]:
+                        continue
+                    # If there are two events with equal begin and end times,
+                    # the earlier event in the trace file should contain the
+                    # later. This also prevents an event from containing itself.
+                    if other["begin"] == event["begin"] and other["end"] == event["end"]:
+                        if events.index(other) >= events.index(event):
+                            continue
+                    hasContainingEvent = True
+                    break
+                if not hasContainingEvent:
+                    topLevelEventTime += event["end"] - event["begin"]
+
+            self.assertEquals(topLevelEventTime, totalSelfTime)
+
 if __name__ == "__main__":
     unittest.main()

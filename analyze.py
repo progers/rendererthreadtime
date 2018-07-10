@@ -64,18 +64,15 @@ def _rendererIds(traceEvents):
         ids.append(pidtid)
     return ids
 
-# Returns events from renderer threads. Each event has a name, begin, end, and
-# self time.
-def rendererEvents(traceEvents):
-    rendererIds = _rendererIds(traceEvents)
-
-    # Get all renderer events grouped by process & thread (PID & TID).
+# Returns events grouped by id tuple (process & thread). Each event has a name,
+# begin, end, and self time.
+def _eventsById(traceEvents, ids):
     eventsById = {}
     for traceEvent in traceEvents:
         if traceEvent.get("ph") != "X":
             continue
         id = (traceEvent["pid"], traceEvent["tid"])
-        if not id in rendererIds:
+        if not id in ids:
             continue
 
         name = traceEvent["name"]
@@ -89,12 +86,19 @@ def rendererEvents(traceEvents):
             eventsById[id] = []
         eventsById[id].append({"name": name, "begin": begin, "end": end})
 
+    for id in eventsById:
+        # Compute self times using events within a process & thread.
+        _computeSelfTimes(eventsById[id])
+
+    return eventsById
+
+# Returns events from renderer threads.
+def rendererEvents(traceEvents):
+    rendererIds = _rendererIds(traceEvents)
+    eventsById = _eventsById(traceEvents, rendererIds)
     events = []
     for id in eventsById:
-        # Compute self times using events within a process & thread (PID & TID).
-        _computeSelfTimes(eventsById[id])
         events.extend(eventsById[id])
-
     return events
 
 def analyze(traceFile):
