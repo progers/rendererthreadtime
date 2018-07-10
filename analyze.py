@@ -11,6 +11,7 @@
 #   5) Run analyze.py trace_file.json
 
 import argparse
+import operator
 import json
 
 # Compute each event's self time which is the time spent in the event minus the
@@ -101,13 +102,60 @@ def rendererEvents(traceEvents):
         events.extend(eventsById[id])
     return events
 
+# Return the category for an event.
+def category(eventName):
+    if (eventName == "v8.callFunction"): return "v8"
+    if (eventName == "LocalFrameView::layout"): return "stylelayout"
+    if (eventName == "Resource::appendData"): return "loading"
+    if (eventName == "v8.run"): return "v8"
+    if (eventName == "MessageLoop::RunTask"): return "scheduling"
+    if (eventName == "Document::updateActiveStyle"): return "stylelayout"
+    if (eventName == "EventHandler::handleMouseMoveEvent"): return "events"
+    if (eventName == "LocalWindowProxy::CreateContext"): return "v8"
+    if (eventName == "ContextCreatedNotification"): return "v8"
+    if (eventName == "safe_browsing.mojom.PhishingModelSetter"): return "safebrowsing"
+    if (eventName == "V8.GCScavenger"): return "v8"
+    if (eventName == "HTMLDocumentParser::processTokenizedChunkFromBackgroundParser"): return "parser"
+    if (eventName == "LocalFrameView::paintTree"): return "paint"
+    if (eventName == "PaintLayerCompositor::updateIfNeededRecursive"): return "compositing"
+    if (eventName == "LocalFrameView::prePaint"): return "prepaint"
+    if (eventName == "network.mojom.URLLoaderClient"): return "loading"
+    if (eventName == "ResourceFetcher::requestResource"): return "loading"
+    if (eventName == "LocalFrameView::updateStyleAndLayoutIfNeededRecursive"): return "stylelayout"
+    if (eventName == "Document::recalcStyle"): return "stylelayout"
+    if (eventName == "CommandBufferProxyImpl::Initialize"): return "gpu"
+    if (eventName == "HTMLParserScriptRunner ExecuteScript"): return "script"
+
+    return "unknown"
+
 def analyze(traceFile):
     with open(traceFile) as f:
         traceJson = json.load(f)
     events = rendererEvents(traceJson["traceEvents"])
 
-    # TODO(pdr): Analyze the events and show the most expensive self-time categories.
-    print "event count: " + str(len(events))
+    categorySelfTimes = {}
+    nameSelfTimes = {}
+    totalSelfTime = 0;
+    for event in events:
+        name = event["name"]
+        if not name in nameSelfTimes:
+            nameSelfTimes[name] = 0
+        nameSelfTimes[name] += event["self"]
+        cat = category(name)
+        if not cat in categorySelfTimes:
+            categorySelfTimes[cat] = 0
+        categorySelfTimes[cat] += event["self"]
+        totalSelfTime += event["self"]
+
+    print "self time by name:"
+    sortedNameSelfTimes = sorted(nameSelfTimes.items(), key=operator.itemgetter(1))
+    for name, time in sortedNameSelfTimes:
+        print name + ", time: " + str(time) + " category: " + category(name) + " (" + str(100 * time / totalSelfTime) + "%)"
+
+    print "self time by category:"
+    sortedCategorySelfTimes = sorted(categorySelfTimes.items(), key=operator.itemgetter(1))
+    for cat, time in sortedCategorySelfTimes:
+        print cat + ", time: " + str(time) + " (" + str(100 * time / totalSelfTime) + "%)"
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze main thread time")
