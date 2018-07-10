@@ -13,18 +13,30 @@
 import argparse
 import json
 
-# Compute each event self time.
-# TODO(pdr): Expand this comment.
+# Compute each event's self time.
 def addSelfTime(events):
-    # This is a naive O(n^2) approach.
-    for event in events:
-        selfTime = event["end"] - event["begin"]
+    def selfTime(event, events):
+        if "self" in event:
+            return event["self"]
+        begin = event["begin"]
+        end = event["end"]
+        otherSelf = 0
         for other in events:
-            if event == other:
-                continue
-            if other["begin"] >= event["begin"] and other["end"] <= event["end"]:
-                selfTime -= (other["end"] - other["begin"])
-        event["self"] = selfTime
+            if other["begin"] < begin or other["end"] > end:
+                continue;
+            # If there are two events with equal begin and end times, the later
+            # event in the trace file should get the self time.
+            if other["begin"] == begin and other["end"] == end:
+                if events.index(other) <= events.index(event):
+                    continue
+            otherSelf += selfTime(other, events)
+        event["self"] = end - begin - otherSelf
+        return event["self"]
+
+    # This is a naive approach where we recursively compute self time and
+    # memoize the result as we go.
+    for event in events:
+        selfTime(event, events)
 
 # Returns the list of renderer (PID, TID) tuples.
 def _rendererIds(traceEvents):

@@ -57,10 +57,23 @@ class TestAnalyze(unittest.TestCase):
         # Pattern being tested:
         #   [  a  ]
         #   [  b  ]
-        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 1, 'end': 4, 'name': 'b'} ]
+        #   [  c  ]
+        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 1, 'end': 4, 'name': 'b'}, {'begin': 1, 'end': 4, 'name': 'c'} ]
         analyze.addSelfTime(events)
         self.assertEquals(0, events[0]["self"])
-        self.assertEquals(3, events[1]["self"])
+        self.assertEquals(0, events[1]["self"])
+        self.assertEquals(3, events[2]["self"])
+
+    def testSelfTimeWithDoublyNestedEvents(self):
+        # Pattern being tested:
+        #   [ a ]
+        #    [ b]
+        #     [c]
+        events = [ {'begin': 1, 'end': 4, 'name': 'a'}, {'begin': 2, 'end': 4, 'name': 'b'}, {'begin': 3, 'end': 4, 'name': 'c'} ]
+        analyze.addSelfTime(events)
+        self.assertEquals(1, events[0]["self"])
+        self.assertEquals(1, events[1]["self"])
+        self.assertEquals(1, events[2]["self"])
 
 if __name__ == "__main__":
     unittest.main()
