@@ -17,28 +17,23 @@ import json
 # Compute each event's self time which is the time spent in the event minus the
 # time spent in all other events occurring at the same time.
 def _computeSelfTimes(events):
-    def selfTime(event, events):
-        if "self" in event:
-            return event["self"]
-        begin = event["begin"]
-        end = event["end"]
-        otherSelf = 0
-        for other in events:
-            if other["begin"] < begin or other["end"] > end:
-                continue;
-            # If there are two events with equal begin and end times, the later
-            # event in the trace file should get the self time.
-            if other["begin"] == begin and other["end"] == end:
-                if events.index(other) <= events.index(event):
-                    continue
-            otherSelf += selfTime(other, events)
-        event["self"] = end - begin - otherSelf
-        return event["self"]
+    stack = []
 
-    # This is a naive approach where we recursively compute self time and
-    # memoize the result as we go.
+    def push(event):
+        event["self"] = event["end"] - event["begin"]
+        stack.append(event)
+    def pop():
+        event = stack.pop()
+        if stack:
+            stack[-1]["self"] -= event["end"] - event["begin"]
+
+    events.sort(key=lambda event: event["begin"])
     for event in events:
-        selfTime(event, events)
+        while stack and (stack[-1]["begin"] > event["begin"] or stack[-1]["end"] < event["end"]):
+            pop()
+        push(event)
+    while stack:
+        pop()
 
 # Returns the list of renderer (PID, TID) tuples.
 def _rendererIds(traceEvents):
