@@ -4,7 +4,8 @@
 #
 # Usage:
 #   1) Navigate to chrome://tracing, record a trace with the categories:
-#      blink, cc, gpu, loading, mojom, toplevel, v8
+#      blink, cc, gpu, loading, mojom, toplevel, v8, and sequencemanager (under
+#      debug).
 #   2) In a new tab, navigate to some page.
 #   3) In chrome://tracing, stop tracing and save the trace.
 #   4) Uncompress the trace file with "gunzip [trace_file.json].gz".
@@ -145,8 +146,20 @@ def category(eventName):
     if (eventName == "ProxyMain::BeginMainFrame::commit"): return "cc"
     if (eventName == "Resource::appendData"): return "loading"
     if (eventName == "ResourceFetcher::requestResource"): return "loading"
+    if (eventName == "RootScrollerController::PerformRootScrollerSelection"): return "rootscroller"
     if (eventName == "RuleSet::addRulesFromSheet"): return "stylelayout"
     if (eventName == "ScheduledAction::execute"): return "v8"
+    if (eventName == "SequenceManager.DidProcessTaskObservers"): return "sequencemanager"
+    if (eventName == "SequenceManager.DidProcessTaskTimeObservers"): return "sequencemanager"
+    if (eventName == "SequenceManager.QueueNotifyDidProcessTask"): return "sequencemanager"
+    if (eventName == "SequenceManager.QueueNotifyWillProcessTask"): return "sequencemanager"
+    if (eventName == "SequenceManager.QueueOnTaskCompleted"): return "sequencemanager"
+    if (eventName == "SequenceManager.QueueOnTaskStarted"): return "sequencemanager"
+    if (eventName == "SequenceManager.WillProcessTaskObservers"): return "sequencemanager"
+    if (eventName == "SequenceManager.WillProcessTaskTimeObservers"): return "sequencemanager"
+    if (eventName == "SequenceManagerImpl::NotifyDidProcessTaskObservers"): return "sequencemanager"
+    if (eventName == "SequenceManagerImpl::NotifyWillProcessTaskObservers"): return "sequencemanager"
+    if (eventName == "SequenceManagerImpl::WakeUpReadyDelayedQueues"): return "sequencemanager"
     if (eventName == "StyleElement::processStyleSheet"): return "stylelayout"
     if (eventName == "StyleEngine::scheduleInvalidationsForRuleSets"): return "stylelayout"
     if (eventName == "StyleEngine::updateActiveStyleSheets"): return "stylelayout"
@@ -162,6 +175,7 @@ def category(eventName):
     if (eventName == "v8.callFunction"): return "v8"
     if (eventName == "v8.callModuleMethodSafe"): return "v8"
     if (eventName == "v8.run"): return "v8"
+
     return "unknown"
 
 def analyze(traceFiles):
