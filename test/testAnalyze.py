@@ -122,5 +122,11 @@ class TestAnalyze(unittest.TestCase):
 
             self.assertEquals(topLevelEventTime, totalSelfTime)
 
+    # Integration test that ensures the total self time and event count are
+    # printed.
+    def testOutput(self):
+        out = analyze.analyze(["test/data/pr.gg_load.json"])
+        self.assertTrue(out.endswith("Total self time: 360ms from 2940 events"))
+
 if __name__ == "__main__":
     unittest.main()

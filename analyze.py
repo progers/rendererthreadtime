@@ -211,23 +211,25 @@ def analyze(traceFiles):
         categorySelfTimes[cat] += event["self"]
         totalSelfTime += event["self"]
 
-    print "Self time by name:"
+    out = []
+    out.append("Self time by name:")
     sortedNameSelfTimes = sorted(nameSelfTimes.items(), key=operator.itemgetter(1))
     for name, time in sortedNameSelfTimes:
-        print "  {0}, category: {1}, self time: {2}ms ({3:03.1f}% of total time)".format(name, category(name), time / 1000, 100.0 * time / totalSelfTime)
+        out.append("  {0}, category: {1}, self time: {2}ms ({3:03.1f}% of total time)".format(name, category(name), time / 1000, 100.0 * time / totalSelfTime))
 
-    print "Self time by category:"
+    out.append("Self time by category:")
     sortedCategorySelfTimes = sorted(categorySelfTimes.items(), key=operator.itemgetter(1))
     for cat, time in sortedCategorySelfTimes:
-        print "  {0}, self time: {1}ms ({2:03.1f}% of total time)".format(cat, time / 1000, 100.0 * time / totalSelfTime)
+        out.append("  {0}, self time: {1}ms ({2:03.1f}% of total time)".format(cat, time / 1000, 100.0 * time / totalSelfTime))
 
-    print "Total self time: {0}ms from {1} events".format(totalSelfTime / 1000, len(events))
+    out.append("Total self time: {0}ms from {1} events".format(totalSelfTime / 1000, len(events)))
+    return "\n".join(out)
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze renderer thread time")
     parser.add_argument("traces", nargs="*", help="Traces to analyze, in json format")
     args, leftover = parser.parse_known_args()
-    analyze(args.traces)
+    print analyze(args.traces)
 
 if __name__ == "__main__":
     main()
