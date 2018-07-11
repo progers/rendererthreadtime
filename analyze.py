@@ -4,8 +4,7 @@
 #
 # Usage:
 #   1) Navigate to chrome://tracing, record a trace with the categories:
-#      blink, cc, gpu, loading, mojom, toplevel, v8, and sequencemanager (under
-#      debug).
+#      blink, cc, gpu, loading, mojom, toplevel, v8
 #   2) In a new tab, navigate to some page.
 #   3) In chrome://tracing, stop tracing and save the trace.
 #   4) Uncompress the trace file with "gunzip [trace_file.json].gz".
