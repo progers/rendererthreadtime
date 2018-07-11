@@ -211,18 +211,20 @@ def analyze(traceFiles):
         categorySelfTimes[cat] += event["self"]
         totalSelfTime += event["self"]
 
-    print "self time by name:"
+    print "Self time by name:"
     sortedNameSelfTimes = sorted(nameSelfTimes.items(), key=operator.itemgetter(1))
     for name, time in sortedNameSelfTimes:
-        print "  " + name + ", time: " + str(time) + " category: " + category(name) + " (" + str(100 * time / totalSelfTime) + "%)"
+        print "  {0}, category: {1}, self time: {2}ms ({3:03.1f}% of total time)".format(name, category(name), time / 1000, 100.0 * time / totalSelfTime)
 
-    print "self time by category:"
+    print "Self time by category:"
     sortedCategorySelfTimes = sorted(categorySelfTimes.items(), key=operator.itemgetter(1))
     for cat, time in sortedCategorySelfTimes:
-        print "  " + cat + ", time: " + str(time) + " (" + str(100 * time / totalSelfTime) + "%)"
+        print "  {0}, self time: {1}ms ({2:03.1f}% of total time)".format(cat, time / 1000, 100.0 * time / totalSelfTime)
+
+    print "Total self time: {0}ms from {1} events".format(totalSelfTime / 1000, len(events))
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze main thread time")
+    parser = argparse.ArgumentParser(description="Analyze renderer thread time")
     parser.add_argument("traces", nargs="*", help="Traces to analyze, in json format")
     args, leftover = parser.parse_known_args()
     analyze(args.traces)
