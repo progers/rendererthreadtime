@@ -15,21 +15,39 @@ import operator
 import json
 
 # Compute each event's self time which is the time spent in the event minus the
-# time spent in all other events occurring at the same time.
-def _computeSelfTimes(events):
+# time spent in all other events occurring at the same time. For example:
+#         [               a: self=3               ]
+#              [  b: self=1   ]    [d: self=2]
+#                   [c: self=2]
+#
+#   time: 0    1    2    3    4    5    6    7    8    9
+def _computeThreadSelfTimes(events):
+    # This algorithm iterates through the events in order of begin time and
+    # keeps track of the current stack. An assumption is that all events are
+    # from a single thread and are nicely nested (i.e., no events overlap like
+    # [begin:1, end:4] and [begin:3, end:5]). There are two important steps:
+    # 1) When an event is pushed, the self time is set to the event's duration.
+    # 2) After an event is popped, the event's duration is subtracted from the
+    #    enclosing event's self time.
+    # The first step computes the self time for "leaf" events and the second
+    # step recursively updates self time for nested events.
+    events.sort(key=lambda event: event["begin"])
     stack = []
 
+    def duration(event):
+        return event["end"] - event["begin"]
     def push(event):
-        event["self"] = event["end"] - event["begin"]
+        event["self"] = duration(event)
         stack.append(event)
     def pop():
         event = stack.pop()
         if stack:
-            stack[-1]["self"] -= event["end"] - event["begin"]
+            stack[-1]["self"] -= duration(event)
+    def nested(outer, inner):
+        return outer["begin"] <= inner["begin"] and outer["end"] >= inner["end"]
 
-    events.sort(key=lambda event: event["begin"])
     for event in events:
-        while stack and (stack[-1]["begin"] > event["begin"] or stack[-1]["end"] < event["end"]):
+        while stack and not nested(stack[-1], event):
             pop()
         push(event)
     while stack:
@@ -84,7 +102,7 @@ def _eventsById(traceEvents, ids):
 
     for id in eventsById:
         # Compute self times using events within a process & thread.
-        _computeSelfTimes(eventsById[id])
+        _computeThreadSelfTimes(eventsById[id])
 
     return eventsById
 
@@ -198,7 +216,7 @@ def analyze(traceFiles):
 
     categorySelfTimes = {}
     nameSelfTimes = {}
-    totalSelfTime = 0;
+    totalSelfTime = 0
     for event in events:
         name = event["name"]
         if not name in nameSelfTimes:
